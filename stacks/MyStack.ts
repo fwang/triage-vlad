@@ -1,57 +1,26 @@
 import {
-  Api,
+  ApiGatewayV1Api,
   Auth,
   StackContext,
-  ViteStaticSite,
 } from "@serverless-stack/resources";
 
-export function MyStack({ stack, app }: StackContext) {
+export function MyStack({ stack }: StackContext) {
   // Create User Pool
-  const auth = new Auth(stack, "Auth", {
-    login: ["email"],
-  });
+  const auth = new Auth(stack, "Auth");
 
   // Create Api
-  const api = new Api(stack, "Api", {
+  new ApiGatewayV1Api(stack, "Api", {
     authorizers: {
-      jwt: {
-        type: "user_pool",
-        userPool: {
-          id: auth.userPoolId,
-          clientIds: [auth.userPoolClientId],
-        },
+      cognito: {
+        type: 'user_pools',
+        userPoolIds: [auth.userPoolId],
       },
     },
     defaults: {
-      authorizer: "jwt",
+      authorizer: "cognito",
     },
     routes: {
-      "GET /private": "functions/private.main",
-      "GET /public": {
-        function: "functions/public.main",
-        authorizer: "none",
-      },
+      "GET /": "functions/lambda.main",
     },
-  });
-
-  // attach permissions for authenticated users to the api
-  auth.attachPermissionsForAuthUsers([api]);
-
-  const site = new ViteStaticSite(stack, "Site", {
-    path: "frontend",
-    environment: {
-      VITE_APP_API_URL: api.url,
-      VITE_APP_REGION: app.region,
-      VITE_APP_USER_POOL_ID: auth.userPoolId,
-      VITE_APP_USER_POOL_CLIENT_ID: auth.userPoolClientId,
-    },
-  });
-
-  // Show the API endpoint and other info in the output
-  stack.addOutputs({
-    ApiEndpoint: api.url,
-    UserPoolId: auth.userPoolId,
-    UserPoolClientId: auth.userPoolClientId,
-    SiteUrl: site.url,
   });
 }

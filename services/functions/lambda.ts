@@ -1,9 +1,10 @@
-import { APIGatewayProxyHandlerV2 } from "aws-lambda";
+import { APIGatewayProxyHandler } from "aws-lambda";
 
-export const handler: APIGatewayProxyHandlerV2 = async (event) => {
+export const main: APIGatewayProxyHandler = async (
+  event
+) => {
   return {
     statusCode: 200,
-    headers: { "Content-Type": "text/plain" },
-    body: `Hello, World! Your request was received at ${event.requestContext.time}.`,
+    body: `Hello ${event.requestContext.authorizer?.jwt.claims.sub}!`,
   };
 };
